@@ -35,6 +35,8 @@ function Translate() {
     { image: yes, name: 'Yes' },
   ];
 
+  const [currentModel, setCurrentModel] = useState(null);
+
   useEffect(() => {
     if (showModal) {
       loadScripts();
@@ -237,6 +239,7 @@ function Translate() {
 
     function displayFinalResult() {
       document.getElementById("final-result").innerHTML = `Final Result: ${finalResult}`;
+      setTranslatedText(`Translated: ${finalResult}`);
     }
 
     function stop() {
@@ -244,6 +247,7 @@ function Translate() {
       window.cancelAnimationFrame(animationFrameId);
       webcam.stop();
       updateButtonStates(false);
+      setCurrentModel(null);
     }
 
     function restart() {
@@ -263,10 +267,16 @@ function Translate() {
 
     // Expose functions to window object
     window.AtoZFunctions = {
-      init,
+      init: () => {
+        init();
+        setCurrentModel('AtoZ');
+      },
       stop,
       displayFinalResult,
-      restart
+      restart: () => {
+        restart();
+        setCurrentModel('AtoZ');
+      }
     };
   };
 
@@ -326,6 +336,7 @@ function Translate() {
 
     function displayFinalResult() {
       document.getElementById("number-final-result").innerHTML = `Final Result: ${finalResult}`;
+      setTranslatedText(`Translated: ${finalResult}`);
     }
 
     function stop() {
@@ -333,6 +344,7 @@ function Translate() {
       window.cancelAnimationFrame(animationFrameId);
       webcam.stop();
       updateButtonStates(false);
+      setCurrentModel(null);
     }
 
     function restart() {
@@ -352,12 +364,20 @@ function Translate() {
 
     // Expose functions to window object
     window.NumberFunctions = {
-      init,
+      init: () => {
+        init();
+        setCurrentModel('Number');
+      },
       stop,
       displayFinalResult,
-      restart
+      restart: () => {
+        restart();
+        setCurrentModel('Number');
+      }
     };
   };
+
+
 
   return (
     <div className="translate">
@@ -403,14 +423,14 @@ function Translate() {
             <h2>A to Z Sign Language Recognition</h2>
             <div>Model</div>
             <button type="button" id="start-button" onClick={() => window.AtoZFunctions.init()}>Start Prediction</button>
-            <button type="button" id="stop-button" onClick={() => window.AtoZFunctions.stop()} disabled>Stop</button>
-            <button type="button" id="predict-button" onClick={() => window.AtoZFunctions.displayFinalResult()} disabled>Predict</button>
-            <button type="button" id="restart-button" onClick={() => window.AtoZFunctions.restart()} disabled>Restart</button>
+            <button type="button" id="stop-button" onClick={() => window.AtoZFunctions.stop()} >Stop</button>
+            <button type="button" id="predict-button" onClick={() => window.AtoZFunctions.displayFinalResult()} >Predict</button>
+            <button type="button" id="restart-button" onClick={() => window.AtoZFunctions.restart()} >Restart</button>
             <div id="webcam-container"></div>
             <div id="label-container"></div>
             <div id="prediction-output"></div>
             <div id="final-result"></div>
-            <button onClick={() => setShowAtoZModal(false)}>Close</button>
+           
           </div>
         </div>
       )}
@@ -420,14 +440,14 @@ function Translate() {
             <h2>Numbers 1-10 Sign Language Recognition</h2>
             <div>Model</div>
             <button type="button" id="number-start-button" onClick={() => window.NumberFunctions.init()}>Start Prediction</button>
-            <button type="button" id="number-stop-button" onClick={() => window.NumberFunctions.stop()} disabled>Stop</button>
-            <button type="button" id="number-predict-button" onClick={() => window.NumberFunctions.displayFinalResult()} disabled>Predict</button>
-            <button type="button" id="number-restart-button" onClick={() => window.NumberFunctions.restart()} disabled>Restart</button>
+            <button type="button" id="number-stop-button" onClick={() => window.NumberFunctions.stop()} >Stop</button>
+            <button type="button" id="number-predict-button" onClick={() => window.NumberFunctions.displayFinalResult()} >Predict</button>
+            <button type="button" id="number-restart-button" onClick={() => window.NumberFunctions.restart()} >Restart</button>
             <div id="number-webcam-container"></div>
             <div id="number-label-container"></div>
             <div id="number-prediction-output"></div>
             <div id="number-final-result"></div>
-            <button onClick={() => setShowNumberModal(false)}>Close</button>
+           
           </div>
         </div>
       )}
