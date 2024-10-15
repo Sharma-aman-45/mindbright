@@ -30,9 +30,10 @@
 
 .navbar-menu {
   display: flex;
-  justify-content: space-evenly; /* Distribute items evenly across the available space */
-  flex-grow: 1; /* Allow the menu to grow and take available space */
-  align-items: center; /* Center items vertically */
+  justify-content: flex-end; /* Change from space-evenly to flex-end */
+  flex-grow: 1;
+  align-items: center;
+  margin-left: 2rem; /* Add some margin to the left */
 }
 
 .navbar-item {
@@ -41,6 +42,7 @@
   padding: 0.5rem 1rem;
   border-radius: 4px;
   transition: color 0.3s, background-color 0.3s; /* Smooth transitions */
+  margin-left: 1rem; /* Add some space between items */
 }
 
 .navbar-item:hover {
@@ -58,7 +60,7 @@
 
 /* Ensure Convert item is part of the menu */
 .navbar-menu .convert-item {
-  margin-left: auto; /* Push the Convert item to the right */
+  margin-left: 1rem; /* Change from auto to 1rem to match other items */
 }
 
 .convert-item:hover {

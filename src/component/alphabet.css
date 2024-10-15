@@ -4,7 +4,7 @@
   }
   
   h1 {
-    color: #333;
+    color: #1a1919;
     margin-bottom: 20px;
   }
   
@@ -20,10 +20,13 @@
     padding: 12px;
     border: 1px solid #ddd;
     text-align: center;
+    color: black;
   }
   
   .alphabet-table th {
-    background-color: #f4f4f4;
+    background-color: white;
+    color: black;
+
   }
   
   .hand-sign {

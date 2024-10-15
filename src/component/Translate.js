@@ -16,6 +16,8 @@ function Translate() {
   const [loadingStatus, setLoadingStatus] = useState('');
   const [finalResult, setFinalResult] = useState('');
   const [translatedText, setTranslatedText] = useState('');
+  const [error, setError] = useState(null);
+  const [animationFrameId, setAnimationFrameId] = useState(null);
 
   const webcamRef = useRef(null);
   const modelRef = useRef(null);
@@ -39,17 +41,20 @@ function Translate() {
     }
   }, [showModal]);
 
-  
   const loadScripts = async () => {
+    setIsLoading(true);
     setLoadingStatus('Loading TensorFlow.js...');
     try {
       await loadScript('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js');
       setLoadingStatus('Loading Teachable Machine...');
       await loadScript('https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js');
       setLoadingStatus('Scripts loaded. Ready to start.');
+      setIsLoading(false);
     } catch (error) {
       console.error("Error loading scripts:", error);
       setLoadingStatus('Error loading scripts. Please try again.');
+      setError('Failed to load required scripts. Please refresh the page and try again.');
+      setIsLoading(false);
     }
   };
 
@@ -65,11 +70,11 @@ function Translate() {
 
   const URL = "https://teachablemachine.withgoogle.com/models/Elr-I70JN/";
   let maxPredictions;
-  let animationFrameId = null;
 
   async function init() {
     setIsLoading(true);
     setLoadingStatus('Loading model...');
+    setError(null);
     const modelURL = URL + "model.json";
     const metadataURL = URL + "metadata.json";
 
@@ -79,7 +84,7 @@ function Translate() {
 
       setLoadingStatus('Setting up webcam...');
       const flip = true;
-      webcamInstanceRef.current = new window.tmImage.Webcam(300, 300, flip); // Increased size for visibility
+      webcamInstanceRef.current = new window.tmImage.Webcam(300, 300, flip);
 
       await webcamInstanceRef.current.setup();
       setLoadingStatus('Starting webcam...');
@@ -109,6 +114,7 @@ function Translate() {
       console.error("Error initializing model or webcam:", error);
       setIsLoading(false);
       setLoadingStatus('Error: ' + error.message);
+      setError('Failed to initialize the model or webcam. Please try again.');
     }
   }
 
@@ -116,7 +122,8 @@ function Translate() {
     if (isRunning) {
       webcamInstanceRef.current.update();
       await predict();
-      animationFrameId = window.requestAnimationFrame(loop);
+      const newAnimationFrameId = window.requestAnimationFrame(loop);
+      setAnimationFrameId(newAnimationFrameId);
     }
   }
 
@@ -133,7 +140,7 @@ function Translate() {
       const predictedClass = prediction.find(p => p.probability === maxProbability);
       
       if (predictionOutputRef.current) {
-        predictionOutputRef.current.innerHTML = `Predicted class: ${predictedClass.className} (Probability: ${predictedClass.probability.toFixed(2)})`;
+        predictionOutputRef.current.innerHTML = ` Predicted class: ${predictedClass.className} (Probability: ${predictedClass.probability.toFixed(2)})`;
       }
       
       setFinalResult(predictedClass.className);
@@ -156,6 +163,13 @@ function Translate() {
     if (webcamInstanceRef.current) {
       webcamInstanceRef.current.stop();
     }
+    if (predictionOutputRef.current) {
+      predictionOutputRef.current.innerHTML = '';
+    }
+    if (finalResultRef.current) {
+      finalResultRef.current.innerHTML = '';
+    }
+    setTranslatedText('');
   }
 
   function restart() {
@@ -164,6 +178,7 @@ function Translate() {
   }
 
   const [showAtoZModal, setShowAtoZModal] = useState(false);
+  const [showNumberModal, setShowNumberModal] = useState(false);
 
   const loadAtoZScript = () => {
     const AtoZModelURL = "https://teachablemachine.withgoogle.com/models/C35_UTABU/";
@@ -255,6 +270,95 @@ function Translate() {
     };
   };
 
+  const loadNumberScript = () => {
+    const NumberModelURL = "https://teachablemachine.withgoogle.com/models/-zDf2FdEU/";
+    
+    let model, webcam, labelContainer, maxPredictions;
+    let isRunning = false;
+    let animationFrameId = null;
+    let finalResult = "";
+
+    async function loadRequiredScripts() {
+      await loadScript('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js');
+      await loadScript('https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js');
+    }
+
+    async function init() {
+      await loadRequiredScripts();
+      
+      const modelURL = NumberModelURL + "model.json";
+      const metadataURL = NumberModelURL + "metadata.json";
+
+      model = await window.tmImage.load(modelURL, metadataURL);
+      maxPredictions = model.getTotalClasses();
+
+      const flip = true;
+      webcam = new window.tmImage.Webcam(200, 200, flip);
+      await webcam.setup();
+      await webcam.play();
+      document.getElementById("number-webcam-container").appendChild(webcam.canvas);
+      labelContainer = document.getElementById("number-label-container");
+      labelContainer.innerHTML = "";
+      for (let i = 0; i < maxPredictions; i++) {
+        labelContainer.appendChild(document.createElement("div"));
+      }
+
+      isRunning = true;
+      animationFrameId = window.requestAnimationFrame(loop);
+      updateButtonStates(true);
+    }
+
+    async function loop() {
+      if (isRunning) {
+        webcam.update();
+        await predict();
+        animationFrameId = window.requestAnimationFrame(loop);
+      }
+    }
+
+    async function predict() {
+      const prediction = await model.predict(webcam.canvas);
+      const maxProbability = Math.max(...prediction.map(p => p.probability));
+      const predictedClass = prediction.find(p => p.probability === maxProbability);
+      document.getElementById("number-prediction-output").innerHTML = `Predicted number: ${predictedClass.className} (Probability: ${predictedClass.probability.toFixed(2)})`;
+      finalResult = predictedClass.className;
+    }
+
+    function displayFinalResult() {
+      document.getElementById("number-final-result").innerHTML = `Final Result: ${finalResult}`;
+    }
+
+    function stop() {
+      isRunning = false;
+      window.cancelAnimationFrame(animationFrameId);
+      webcam.stop();
+      updateButtonStates(false);
+    }
+
+    function restart() {
+      stop();
+      document.getElementById("number-webcam-container").innerHTML = "";
+      document.getElementById("number-prediction-output").innerHTML = "";
+      document.getElementById("number-final-result").innerHTML = "";
+      init();
+    }
+
+    function updateButtonStates(isRunning) {
+      document.getElementById("number-start-button").disabled = isRunning;
+      document.getElementById("number-stop-button").disabled = !isRunning;
+      document.getElementById("number-predict-button").disabled = !isRunning;
+      document.getElementById("number-restart-button").disabled = !isRunning;
+    }
+
+    // Expose functions to window object
+    window.NumberFunctions = {
+      init,
+      stop,
+      displayFinalResult,
+      restart
+    };
+  };
+
   return (
     <div className="translate">
       <h1 className="page-title">Sign Language Translator</h1>
@@ -264,11 +368,14 @@ function Translate() {
           <div className="sign-input-area">
             <p>Sign language input area</p>
             <div className="button-container">
-              <button onClick={() => setShowModal(true)}>Capture Sign</button>
               <button onClick={() => {
                 setShowAtoZModal(true);
                 loadAtoZScript();
               }}>A to Z</button>
+              <button onClick={() => {
+                setShowNumberModal(true);
+                loadNumberScript();
+              }}>Numbers 1-10</button>
             </div>
           </div>
         </div>
@@ -290,23 +397,6 @@ function Translate() {
           ))}
         </div>
       </div>
-      {showModal && (
-        <div className="modal">
-          <div className="modal-content">
-            <h2>Capture Sign</h2>
-            <button type="button" onClick={init} disabled={isRunning || isLoading}>Start</button>
-            <button type="button" id="predict-button" onClick={displayFinalResult}>Predict</button>
-            <button type="button" id="stop-button" onClick={stop}>Stop</button>
-            <button type="button" onClick={restart}>Restart</button>
-            {isLoading && <p>{loadingStatus || 'Please wait, camera is starting...'}</p>}
-            <div id="webcam-container" ref={webcamRef} style={{width: '300px', height: '300px', border: '1px solid black', margin: '10px 0'}}></div>
-            <div id="label-container" ref={labelContainerRef}></div>
-            <div id="prediction-output" ref={predictionOutputRef}></div>
-            <div id="final-result" ref={finalResultRef}></div>
-            <button onClick={() => setShowModal(false)}>Close</button>
-          </div>
-        </div>
-      )}
       {showAtoZModal && (
         <div className="modal">
           <div className="modal-content">
@@ -324,8 +414,25 @@ function Translate() {
           </div>
         </div>
       )}
+      {showNumberModal && (
+        <div className="modal">
+          <div className="modal-content">
+            <h2>Numbers 1-10 Sign Language Recognition</h2>
+            <div>Model</div>
+            <button type="button" id="number-start-button" onClick={() => window.NumberFunctions.init()}>Start Prediction</button>
+            <button type="button" id="number-stop-button" onClick={() => window.NumberFunctions.stop()} disabled>Stop</button>
+            <button type="button" id="number-predict-button" onClick={() => window.NumberFunctions.displayFinalResult()} disabled>Predict</button>
+            <button type="button" id="number-restart-button" onClick={() => window.NumberFunctions.restart()} disabled>Restart</button>
+            <div id="number-webcam-container"></div>
+            <div id="number-label-container"></div>
+            <div id="number-prediction-output"></div>
+            <div id="number-final-result"></div>
+            <button onClick={() => setShowNumberModal(false)}>Close</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-export default Translate;
+export default Translate;

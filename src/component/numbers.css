@@ -4,7 +4,7 @@
   }
   
   h1 {
-    color: #333;
+    color: #0e0d0d;
     margin-bottom: 20px;
   }
   
@@ -20,6 +20,7 @@
     padding: 12px;
     border: 1px solid #ddd;
     text-align: center;
+    color: black;
   }
   
   .numbers-table th {
